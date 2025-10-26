@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 # Load your YOLO model once
 @st.cache_resource
 def load_model():
-    model_path = "/content/drive/MyDrive/RetinaVision_YOLOv12/yolov12/runs/segment/train_newDataSet_Fri_2025-10-24_03-33/weights/best.pt"
+    model_path = "best.pt"
     return YOLO(model_path)
 
 model = load_model()
