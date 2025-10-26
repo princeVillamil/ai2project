@@ -5,9 +5,9 @@ import numpy as np
 from PIL import Image
 
 # Load your trained model
-model = YOLO("/path/to/best.pt")
+model = YOLO("best.pt")
 
-st.title("🔍 RetinaVision Object Segmentation")
+st.title("RetinaVision Object Segmentation")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
@@ -20,7 +20,7 @@ if uploaded_file is not None:
         with st.spinner("Running model..."):
             # Run inference
             results = model.predict(source=np.array(image), conf=0.25)
-            st.success("✅ Prediction complete!")
+            st.success("Prediction complete!")
 
             # Process the first result
             for r in results:
