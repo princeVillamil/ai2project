@@ -18,18 +18,12 @@ st.title("RetinaVision: Disease Detection using YOLOv12")
 uploaded_file = st.file_uploader("Upload an eye image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Convert uploaded file to OpenCV image
-    image = Image.open(uploaded_file)
-    image_np = np.array(image)
-    image_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    st.image(image, caption="Uploaded Image", use_container_width=True)
-
-    # ---- Run model ----
-    st.write("Running detection...")
-    results = model.predict(image_bgr, conf=0.5, imgsz=800)
-
-    # ---- Display predictions ----
-    for r in results:
-        annotated_frame = r.plot()  # YOLO automatically draws boxes and masks
-        st.image(annotated_frame, caption="Detection Result", use_container_width=True)
+    if st.button("Run Segmentation"):
+        with st.spinner("Running YOLO segmentation..."):
+            results = model.predict(image)
+            for r in results:
+                annotated_frame = r.plot()
+                st.image(annotated_frame, caption="Model Prediction", use_column_width=True)
