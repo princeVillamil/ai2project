@@ -1,61 +1,77 @@
 import streamlit as st
 from ultralytics import YOLO
-from PIL import Image, ImageDraw
-import tempfile
-import os
+import cv2
 import numpy as np
+from PIL import Image
 
-# Title and instructions
-st.title("RetinaVision - Eye Disease Segmentation")
-st.write("Upload an eye image to segment AMD, Cataract, and Pathological Myopia.")
+# --- Page setup ---
+st.set_page_config(page_title="RetinaVision YOLOv12", layout="centered")
+st.title("RetinaVision: Pathological Myopia Detection")
 
-# Load model
+# --- Load YOLO model ---
 @st.cache_resource
 def load_model():
-    model = YOLO("best.pt")
+    model = YOLO("best.pt")  # path to your trained model
     return model
 
 model = load_model()
 
-# File uploader
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+# --- Upload section ---
+uploaded_file = st.file_uploader("Upload an eye image", type=["jpg", "jpeg", "png"])
 
-if uploaded_file:
-    # Open uploaded image
+if uploaded_file is not None:
+    # Convert uploaded image
     image = Image.open(uploaded_file).convert("RGB")
+    img_np = np.array(image)
+    img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+
     st.image(image, caption="Uploaded Image", use_container_width=True)
 
-    # Confidence threshold slider
-    conf = st.slider("Confidence threshold", 0.1, 1.0, 0.5, 0.05)
+    # --- Run YOLO inference ---
+    with st.spinner("Analyzing image..."):
+        results = model(img_np)
 
-    # Run inference
-    with st.spinner("Running segmentation..."):
-        # Save uploaded image to a temporary file with proper format
-        ext = os.path.splitext(uploaded_file.name)[1] or ".png"
-        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp_file:
-            image.save(tmp_file.name, format=image.format or "PNG")
-            results = model.predict(tmp_file.name, conf=conf, imgsz=800)
+    # --- Process results ---
+    r = results[0]
+    img = img_bgr.copy()
+    info_text = []
 
-        # Create a copy for drawing
-        result_image = image.copy()
-        draw = ImageDraw.Draw(result_image)
+    # Overlay segmentation masks
+    if r.masks is not None:
+        masks = r.masks.data.cpu().numpy()
+        for mask in masks:
+            mask = cv2.resize(mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+            mask = mask.astype(np.uint8) * 255
+            colored_mask = np.zeros_like(img)
+            colored_mask[:, :, 2] = mask  # red channel
+            img = cv2.addWeighted(img, 1.0, colored_mask, 0.5, 0)
 
-        # Draw bounding boxes if available
-        if hasattr(results[0], "boxes") and len(results[0].boxes) > 0:
-            for box in results[0].boxes.xyxy:
-                x1, y1, x2, y2 = box.cpu().numpy()
-                draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
+    # Draw boxes and info
+    boxes = r.boxes.xyxy.cpu().numpy()
+    scores = r.boxes.conf.cpu().numpy()
+    class_ids = r.boxes.cls.cpu().numpy().astype(int)
+    names = model.names
 
-        # Draw masks if available
-        if hasattr(results[0], "masks") and results[0].masks is not None:
-            for mask_tensor in results[0].masks.data:
-                mask = (mask_tensor.cpu().numpy() * 255).astype(np.uint8)
-                mask_image = Image.fromarray(mask).convert("L")
-                result_image.paste(mask_image, (0, 0), mask_image)
+    for box, score, cls_id in zip(boxes, scores, class_ids):
+        x1, y1, x2, y2 = map(int, box)
+        area = (x2 - x1) * (y2 - y1)
+        label = f"{names[cls_id]} {score:.2f}"
 
-        # Display result
-        st.image(result_image, caption="Segmented Output", use_container_width=True)
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(img, label, (x1, max(y1 - 10, 0)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-        # Detection details
-        st.subheader("Detection Details")
-        st.json(results[0].tojson())
+        info_text.append(
+            f"Class: **{names[cls_id]}** | Confidence: `{score:.2f}` | Area: `{area}` | Box: `{x2-x1}x{y2-y1}`"
+        )
+
+    # --- Display results ---
+    st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption="Prediction Result", use_container_width=True)
+    st.markdown("---")
+
+    st.markdown("### Detection Info")
+    if info_text:
+        for info in info_text:
+            st.markdown(info)
+    else:
+        st.info("No detections found.")
