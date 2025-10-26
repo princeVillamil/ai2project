@@ -1,62 +1,64 @@
-import streamlit as st
 from ultralytics import YOLO
-from PIL import Image
-import pandas as pd
+import cv2
+from matplotlib import pyplot as plt
 import numpy as np
+import os
 
-# -------------------------------
-# Load YOLO model
-# -------------------------------
-@st.cache_resource
-def load_model():
-    model = YOLO("best.pt")  # your trained model file
-    return model
+# Load trained YOLO model
+model = YOLO("best.pt")  # Change path if needed
 
-model = load_model()
+# Ask the user for an image file path
+img_path = input("Enter the path to your image file: ").strip()
 
-# -------------------------------
-# Streamlit App
-# -------------------------------
-st.title("YOLOv12 Segmentation Viewer")
-st.write("Upload an image to visualize detections and segmentation masks.")
+# Check if file exists
+if not os.path.exists(img_path):
+    print("File not found. Please check the path and try again.")
+    exit()
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
+# Run inference
+results = model(img_path)
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+# Process and visualize results
+for r in results:
+    # Load the original image (full resolution)
+    img = cv2.imread(img_path)
 
-    if st.button("Run Prediction"):
-        with st.spinner("Running model..."):
-            results = model.predict(source=np.array(image), conf=0.25)
+    # Overlay segmentation masks
+    if r.masks is not None:
+        masks = r.masks.data.cpu().numpy()
+        for mask in masks:
+            mask = cv2.resize(mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+            mask = mask.astype(np.uint8) * 255
+            colored_mask = np.zeros_like(img)
+            colored_mask[:, :, 2] = mask  # Red overlay for segmentation
+            img = cv2.addWeighted(img, 1.0, colored_mask, 0.5, 0)   
 
-        st.success("Prediction complete!")
+    # Draw bounding boxes, labels, and confidence scores
+    boxes = r.boxes.xyxy.cpu().numpy()
+    scores = r.boxes.conf.cpu().numpy()
+    class_ids = r.boxes.cls.cpu().numpy().astype(int)
+    names = model.names
 
-        for r in results:
-            annotated_image = r.plot()  # annotated numpy image
-            st.image(annotated_image, caption="Predicted Output", use_column_width=True)
+    for box, score, cls_id in zip(boxes, scores, class_ids):
+        x1, y1, x2, y2 = map(int, box)
+        label = f"{names[cls_id]} {score:.2f}"
 
-            # Detection details
-            boxes = r.boxes
-            names = model.names
+        # Draw rectangle
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        # Put label
+        cv2.putText(img, label, (x1, max(y1 - 10, 0)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2, lineType=cv2.LINE_AA)
 
-            if boxes is not None and len(boxes) > 0:
-                data = []
-                for box in boxes:
-                    cls_id = int(box.cls[0])
-                    cls_name = names[cls_id]
-                    conf = float(box.conf[0])
-                    xyxy = box.xyxy[0].tolist()
-                    data.append({
-                        "Class": cls_name,
-                        "Confidence": round(conf, 3),
-                        "X1": round(xyxy[0], 1),
-                        "Y1": round(xyxy[1], 1),
-                        "X2": round(xyxy[2], 1),
-                        "Y2": round(xyxy[3], 1),
-                    })
+    # Display image at original resolution
+    h, w = img.shape[:2]
+    dpi = 300
+    fig_w, fig_h = w / dpi, h / dpi
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h), dpi=dpi)
+    ax.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    ax.axis("off")
+    plt.show()
 
-                st.subheader("Detection Details")
-                st.dataframe(pd.DataFrame(data))
-            else:
-                st.warning("No detections found.")
+    # Print confidence info
+    print("\n--- Detection Info ---")
+    for box, score, cls_id in zip(boxes, scores, class_ids):
+        print(f"Class: {names[cls_id]}, Confidence: {score:.2f}")
