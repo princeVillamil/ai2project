@@ -12,7 +12,6 @@ st.set_page_config(page_title="Nail Disease Segmentation", layout="wide")
 MODEL_PATH = "best.pt"
 CONFIDENCE_THRESHOLD = 0.20
 MASK_ALPHA = 0.5
-PROJECT_GROUP_NAME = "youngstunna"
 
 # --- Inject Custom CSS ---
 st.markdown("""
@@ -191,6 +190,7 @@ with col_left:
                 # Display Results
                 if detection_made:
                     is_only_healthy = detected_classes == {'healthy_nail'}
+                    print(detected_classes)
                     result_image_rgb = cv2.cvtColor(overlay_image, cv2.COLOR_BGR2RGB)
                     if is_only_healthy:
                         message_placeholder.success("Healthy nail detected. No diseases found.")
@@ -210,15 +210,10 @@ with col_left:
 
 # --- RIGHT COLUMN (Blue Info Panel) ---
 with col_right:
-    st.header("Nail Disease Segmentation")
+    st.header("Eye Disease Segmentation")
     st.write(f"""
-        An AI-powered application developed by **Group {PROJECT_GROUP_NAME}** for the AI2 T1 AY2526 course.
-        This tool analyzes nail images to identify potential health conditions.
-        Upload an image, and the system will attempt to segment and classify areas indicating specific nail diseases or confirm healthy nails.
+        This project introduces a deep learning–based system for the detection and segmentation of ocular diseases using retinal fundus images. Leveraging the YOLOv12 segmentation architecture, the model was trained on a curated dataset called RetinaVision, consisting of annotated images representing cataract, age-related macular degeneration (AMD), and pathologic myopia. The dataset was divided into 80% training, 10% validation, and 10% testing subsets to ensure balanced evaluation.
     """)
     st.markdown("---")
-    st.write("**How it works:**")
-    st.write("1. Upload a clear image of a nail.")
-    st.write("2. The AI model analyzes the image.")
-    st.write("3. Detected conditions (or healthy status) are highlighted.")
-    st.write("_Disclaimer: This tool is for educational purposes only and not a substitute for professional medical diagnosis._")
+
+
