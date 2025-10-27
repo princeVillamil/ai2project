@@ -190,10 +190,10 @@ with col_left:
                 # Display Results
                 if detection_made:
                     is_only_healthy = detected_classes == {'healthy_nail'}
-                    print(detected_classes)
+                    # print(detected_classes)
                     result_image_rgb = cv2.cvtColor(overlay_image, cv2.COLOR_BGR2RGB)
                     if is_only_healthy:
-                        message_placeholder.success("Healthy nail detected. No diseases found.")
+                        message_placeholder.success(f"Healthy nail detected. No diseases found. {detected_classes}")
                         result_placeholder.image(result_image_rgb, caption='Processed Image - Healthy Nail.', use_container_width=True)
                     else:
                         message_placeholder.warning("Nail condition(s) detected. Please consult a healthcare professional.")
