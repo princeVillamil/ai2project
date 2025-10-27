@@ -136,10 +136,9 @@ with col_left:
                     detection_made = False
                     detected_classes = set()
 
-                    # YOLO class IDs and names
                     class_map = {
-                        0: "Cataract",
-                        1: "Age-related Macular Degeneration (AMD)",
+                        0: "Age-related Macular Degeneration (AMD)",
+                        1: "Cataract",
                         2: "Pathologic Myopia"
                     }
                     colors = [tuple(np.random.randint(100, 256, 3).tolist()) for _ in range(len(class_map))]
