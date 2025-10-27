@@ -138,24 +138,6 @@ def load_yolo_model(model_path):
 
 # --- Define the two main columns ---
 col1, col2 = st.columns([1, 1.2], gap="large") # Give slightly more space to right column
-
-# --- Content for Left Column (Blue Area) ---
-with col1:
-    # st.image("your_logo.png", width=150) # Replace with your logo if you have one
-    st.header("Nail Disease Segmentation")
-    st.write(f"""
-        An AI-powered application developed by **Group {PROJECT_GROUP_NAME}** for the AI2 T1 AY2526 course.
-        This tool analyzes nail images to identify potential health conditions.
-        Upload an image, and the system will attempt to segment and classify areas indicating specific nail diseases or confirm healthy nails.
-    """)
-    st.markdown("---")
-    st.write("**How it works:**")
-    st.write("1. Upload a clear image of a nail.")
-    st.write("2. The AI model analyzes the image.")
-    st.write("3. Detected conditions (or healthy status) are highlighted.")
-    st.write("_Disclaimer: This tool is for educational purposes only and not a substitute for professional medical diagnosis._")
-
-# --- Content for Right Column (White Area) ---
 with col2:
     st.subheader("Analyze Your Image")
 
@@ -268,28 +250,3 @@ with col2:
                 st.error(f"An error occurred during image processing: {e}")
                 st.warning("Please ensure you uploaded a valid, uncorrupted image file (JPG, PNG, JPEG).")
 
-# --- Sidebar for Ethics Notice ---
-# (Keep the sidebar code exactly the same as the previous response)
-st.sidebar.title("Ethical Considerations")
-st.sidebar.markdown("---")
-st.sidebar.subheader("Notice on Use, Redistribution, and Ethical Compliance")
-st.sidebar.warning("Redistribution, reproduction, or use of this material beyond personal reference is strictly prohibited without the prior written consent of the author. Unauthorized copying, modification, or dissemination—whether for commercial, academic, or institutional purposes—violates intellectual property rights and may result in legal or disciplinary action.")
-
-st.sidebar.subheader("AI Governance and Ethics Considerations")
-st.sidebar.error("This work must not be used in ways that:")
-st.sidebar.markdown("""
-* Compromise data privacy or violate data protection regulations (e.g., GDPR, Philippine Data Privacy Act).
-* Perpetuate bias or discrimination by misusing algorithms, datasets, or results.
-* Enable harmful applications, including surveillance, profiling, or uses that undermine human rights.
-* Misrepresent authorship or credit, such as plagiarism or omission of proper citations.
-""")
-
-st.sidebar.subheader("Responsible Use Principles")
-st.sidebar.info("Users are expected to follow responsible research and innovation practices, ensuring that any derivative work is:")
-st.sidebar.markdown("""
-* **Transparent** → Clear acknowledgment of sources and methodology.
-* **Accountable** → Proper attribution and disclosure of limitations.
-* **Beneficial to society** → Applications that align with ethical standards and do not cause harm.
-""")
-st.sidebar.markdown("---")
-st.sidebar.caption("For any intended use (academic, research, or practical), prior written approval must be obtained from the author to ensure compliance with both legal requirements and ethical AI practices.")
