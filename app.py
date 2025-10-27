@@ -6,7 +6,7 @@ from PIL import Image
 import io
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Nail Disease Segmentation", layout="wide")
+st.set_page_config(page_title="Ocular Disease Segmentation", layout="wide")
 
 # --- Configuration ---
 MODEL_PATH = "best.pt"
@@ -103,19 +103,19 @@ def load_yolo_model(model_path):
         print(f"Error loading model: {e}")
         return None
 
-# --- Define Columns (reversed order) ---
+# --- Define Columns ---
 col_left, col_right = st.columns([1.2, 1], gap="large")
 
 # --- LEFT COLUMN (White) ---
 with col_left:
-    st.subheader("Analyze Your Image")
+    st.subheader("Analyze Retinal Fundus Image")
 
     model = load_yolo_model(MODEL_PATH)
     if model is None:
         st.error(f"FATAL ERROR: Model failed to load from path '{MODEL_PATH}'. Ensure 'best.pt' is present.")
         st.stop()
     else:
-        uploaded_file = st.file_uploader("Choose an image (JPG, PNG, JPEG)...", type=["jpg", "png", "jpeg"])
+        uploaded_file = st.file_uploader("Upload a retinal image (JPG, PNG, JPEG)...", type=["jpg", "png", "jpeg"])
 
         if uploaded_file is not None:
             result_placeholder = st.empty()
@@ -136,8 +136,13 @@ with col_left:
                     detection_made = False
                     detected_classes = set()
 
-                    names = model.names
-                    colors = [tuple(np.random.randint(100, 256, 3).tolist()) for _ in range(len(names))]
+                    # YOLO class IDs and names
+                    class_map = {
+                        0: "Cataract",
+                        1: "Age-related Macular Degeneration (AMD)",
+                        2: "Pathologic Myopia"
+                    }
+                    colors = [tuple(np.random.randint(100, 256, 3).tolist()) for _ in range(len(class_map))]
 
                     for r in results:
                         boxes = r.boxes.xyxy.cpu().numpy()
@@ -147,8 +152,8 @@ with col_left:
                             class_ids = r.boxes.cls.cpu().numpy().astype(int)
                             detection_made = True
                             for cls_id in class_ids:
-                                if 0 <= cls_id < len(names):
-                                    detected_classes.add(names[cls_id])
+                                if cls_id in class_map:
+                                    detected_classes.add(class_map[cls_id])
                         else:
                             class_ids = np.array([], dtype=int)
 
@@ -162,7 +167,7 @@ with col_left:
                                     mask_resized = cv2.resize(mask, (overlay_w, overlay_h), interpolation=cv2.INTER_NEAREST)
                                     mask_uint8 = mask_resized.astype(np.uint8) * 255
                                     class_id = class_ids[i]
-                                    if 0 <= class_id < len(colors):
+                                    if class_id in class_map:
                                         color = colors[class_id]
                                         colored_mask = np.zeros_like(overlay_image, dtype=np.uint8)
                                         for c_idx in range(3):
@@ -174,9 +179,9 @@ with col_left:
                             for i, (box, score) in enumerate(zip(boxes, scores)):
                                 if i < len(class_ids):
                                     cls_id = class_ids[i]
-                                    if 0 <= cls_id < len(names):
+                                    if cls_id in class_map:
                                         x1, y1, x2, y2 = map(int, box)
-                                        label = f"{names[cls_id]} {score:.2f}"
+                                        label = f"{class_map[cls_id]} {score:.2f}"
                                         color = colors[cls_id]
                                         cv2.rectangle(overlay_image, (x1, y1), (x2, y2), color, 2)
                                         (label_width, label_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
@@ -189,17 +194,17 @@ with col_left:
 
                 # Display Results
                 if detection_made:
-                    is_only_healthy = detected_classes == {'healthy_nail'}
-                    # print(detected_classes)
                     result_image_rgb = cv2.cvtColor(overlay_image, cv2.COLOR_BGR2RGB)
-                    if is_only_healthy:
-                        message_placeholder.success(f"Healthy nail detected. No diseases found. {detected_classes}")
-                        result_placeholder.image(result_image_rgb, caption='Processed Image - Healthy Nail.', use_container_width=True)
+
+                    if len(detected_classes) == 0:
+                        message_placeholder.success("No ocular diseases detected — Retina appears healthy.")
+                        result_placeholder.image(result_image_rgb, caption='Processed Image - Healthy Retina.', use_container_width=True)
                     else:
-                        message_placeholder.warning("Nail condition(s) detected. Please consult a healthcare professional.")
+                        detected_str = ", ".join(detected_classes)
+                        message_placeholder.warning(f"Ocular condition(s) detected: {detected_str}. Please consult an eye care professional.")
                         result_placeholder.image(result_image_rgb, caption='Processed Image with Detections.', use_container_width=True)
                 else:
-                    message_placeholder.info(f"No nail conditions detected above {CONFIDENCE_THRESHOLD*100:.0f}% confidence. {detected_classes}")
+                    message_placeholder.info(f"No diseases detected above {CONFIDENCE_THRESHOLD*100:.0f}% confidence.")
                     result_placeholder.image(image, caption='Uploaded Image.', use_container_width=True)
 
             except Exception as e:
@@ -210,10 +215,16 @@ with col_left:
 
 # --- RIGHT COLUMN (Blue Info Panel) ---
 with col_right:
-    st.header("Eye Disease Segmentation")
+    st.header("Ocular Disease Detection and Segmentation")
     st.write(f"""
-        This project introduces a deep learning–based system for the detection and segmentation of ocular diseases using retinal fundus images. Leveraging the YOLOv12 segmentation architecture, the model was trained on a curated dataset called RetinaVision, consisting of annotated images representing cataract, age-related macular degeneration (AMD), and pathologic myopia. The dataset was divided into 80% training, 10% validation, and 10% testing subsets to ensure balanced evaluation.
+        This system uses **YOLOv12 segmentation** for detecting and segmenting multiple ocular diseases
+        from retinal fundus images. It identifies three conditions:
+        - **Cataract**
+        - **Age-related Macular Degeneration (AMD)**
+        - **Pathologic Myopia**
+        
+        Trained on the custom **RetinaVision** dataset, this model achieved high precision (mAP@0.5 = 0.93)
+        and reliable generalization (mAP@0.5:0.95 = 0.767), highlighting its potential for real-time
+        ophthalmic screening applications.
     """)
     st.markdown("---")
-
-
