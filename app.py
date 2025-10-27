@@ -184,4 +184,41 @@ with col_left:
                                         y_text_bg_top = max(0, y1 - label_height - baseline - 5)
                                         cv2.rectangle(overlay_image, (x1, y_text_bg_top), (x1 + label_width, y1), color, cv2.FILLED)
                                         y_text_pos = max(10, y1 - baseline - 3)
-                                        cv2.putT
+                                        cv2.putText(overlay_image, label, (x1, y_text_pos),
+                                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2,
+                                                    lineType=cv2.LINE_AA)
+
+                # Display Results
+                if detection_made:
+                    is_only_healthy = detected_classes == {'healthy_nail'}
+                    result_image_rgb = cv2.cvtColor(overlay_image, cv2.COLOR_BGR2RGB)
+                    if is_only_healthy:
+                        message_placeholder.success("Healthy nail detected. No diseases found.")
+                        result_placeholder.image(result_image_rgb, caption='Processed Image - Healthy Nail.', use_container_width=True)
+                    else:
+                        message_placeholder.warning("Nail condition(s) detected. Please consult a healthcare professional.")
+                        result_placeholder.image(result_image_rgb, caption='Processed Image with Detections.', use_container_width=True)
+                else:
+                    message_placeholder.info(f"No nail conditions detected above {CONFIDENCE_THRESHOLD*100:.0f}% confidence.")
+                    result_placeholder.image(image, caption='Uploaded Image.', use_container_width=True)
+
+            except Exception as e:
+                result_placeholder.empty()
+                message_placeholder.empty()
+                st.error(f"An error occurred during image processing: {e}")
+                st.warning("Please upload a valid, uncorrupted image file.")
+
+# --- RIGHT COLUMN (Blue Info Panel) ---
+with col_right:
+    st.header("Nail Disease Segmentation")
+    st.write(f"""
+        An AI-powered application developed by **Group {PROJECT_GROUP_NAME}** for the AI2 T1 AY2526 course.
+        This tool analyzes nail images to identify potential health conditions.
+        Upload an image, and the system will attempt to segment and classify areas indicating specific nail diseases or confirm healthy nails.
+    """)
+    st.markdown("---")
+    st.write("**How it works:**")
+    st.write("1. Upload a clear image of a nail.")
+    st.write("2. The AI model analyzes the image.")
+    st.write("3. Detected conditions (or healthy status) are highlighted.")
+    st.write("_Disclaimer: This tool is for educational purposes only and not a substitute for professional medical diagnosis._")
