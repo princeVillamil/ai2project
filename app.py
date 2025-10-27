@@ -137,7 +137,7 @@ with col_left:
                     detected_classes = set()
 
                     class_map = {
-                        0: "Age-related Macular Degeneration (AMD)",
+                        0: "AMD",
                         1: "Cataract",
                         2: "Pathologic Myopia"
                     }
@@ -196,11 +196,11 @@ with col_left:
                     result_image_rgb = cv2.cvtColor(overlay_image, cv2.COLOR_BGR2RGB)
 
                     if len(detected_classes) == 0:
-                        message_placeholder.success("No ocular diseases detected — Retina appears healthy.")
+                        message_placeholder.success("No diseases detected — Retina appears healthy.")
                         result_placeholder.image(result_image_rgb, caption='Processed Image - Healthy Retina.', use_container_width=True)
                     else:
                         detected_str = ", ".join(detected_classes)
-                        message_placeholder.warning(f"Ocular condition(s) detected: {detected_str}. Please consult an eye care professional.")
+                        message_placeholder.warning(f"Condition(s) detected: {detected_str}. Please consult an eye care professional.")
                         result_placeholder.image(result_image_rgb, caption='Processed Image with Detections.', use_container_width=True)
                 else:
                     message_placeholder.info(f"No diseases detected above {CONFIDENCE_THRESHOLD*100:.0f}% confidence.")
