@@ -199,7 +199,7 @@ with col_left:
                         message_placeholder.warning("Nail condition(s) detected. Please consult a healthcare professional.")
                         result_placeholder.image(result_image_rgb, caption='Processed Image with Detections.', use_container_width=True)
                 else:
-                    message_placeholder.info(f"No nail conditions detected above {CONFIDENCE_THRESHOLD*100:.0f}% confidence.")
+                    message_placeholder.info(f"No nail conditions detected above {CONFIDENCE_THRESHOLD*100:.0f}% confidence. {detected_classes}")
                     result_placeholder.image(image, caption='Uploaded Image.', use_container_width=True)
 
             except Exception as e:
